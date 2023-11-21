@@ -14,6 +14,7 @@ CREATE TABLE transactions (
                        value int,
                        time datetime,
                        customer_id int,
+                       points int,
                         PRIMARY KEY (id),
                         CONSTRAINT fk_customer foreign key (customer_id) references customers(id) on delete no action
 );

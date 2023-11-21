@@ -5,25 +5,39 @@ import com.shoprewards.entity.Customer;
 import com.shoprewards.entity.Transaction;
 import com.shoprewards.exception.CustomerNotFoundException;
 import com.shoprewards.service.CustomerService;
-import com.shoprewards.util.RewardsCalculator;
-import com.shoprewards.vo.RewardsMonthAndTotal;
+import com.shoprewards.service.TransactionService;
+import com.shoprewards.utils.RewardsCalculator;
+import com.shoprewards.vo.CustomerVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
     private CustomerRepository customerRepository;
+    private TransactionService transactionService;
     @Autowired
-    public CustomerServiceImpl(CustomerRepository customerRepository){
+    public CustomerServiceImpl(CustomerRepository customerRepository, TransactionService ts){
+        this.transactionService = ts;
         this.customerRepository = customerRepository;
     }
     public Optional<Customer> findById(long id){
         return customerRepository.findById(id);
+    }
+    public CustomerVO findWithTransactionsById(long id){
+        Optional<Customer> result = customerRepository.findById(id);
+        result.orElseThrow(CustomerNotFoundException::new);
+        Customer c = result.get();
+        List<Transaction> transactions = transactionService.findByCustomerId(c.getId());
+        if(!transactions.isEmpty()){
+            int total = RewardsCalculator.calculateTotalRewards(transactions);
+            int[] monthly = RewardsCalculator.calculateMonthlyRewards(transactions);
+            return new CustomerVO(c, transactions, total, monthly);
+        }
+        return new CustomerVO(c, null, 0, new int[]{0,0,0});
+
     }
     public Customer save(Customer c){
         return customerRepository.save(c);
@@ -34,20 +48,18 @@ public class CustomerServiceImpl implements CustomerService {
     public void deleteById(long id){
         customerRepository.deleteById(id);
     }
-    public RewardsMonthAndTotal getRewardsById(long id){
-        Optional<Customer> c = customerRepository.findById(id);
-        if(c.isEmpty()){
-            throw new CustomerNotFoundException();
-        }
-        Set<Transaction> transactions = c.get().getTransactions();
-        RewardsMonthAndTotal result = new RewardsMonthAndTotal();
-        List<Transaction> transactionList = new ArrayList<Transaction>(transactions);
-        long total = RewardsCalculator.calculateTotalRewards(transactionList);
-        result.setTotal(total);
-        List[] monthly = RewardsCalculator.calculateMonthlyRewards(transactionList);
-        result.setMonths(monthly[0]);
-        result.setRewardsPerMonth((monthly[1]));
-        return result;
 
+    @Override
+    public Optional<Customer> findByUsername(String username) {
+        return customerRepository.findByUsername(username);
+    }
+
+    public Customer updateById(long id, Customer newC){
+        Optional<Customer> opt = customerRepository.findById(id);
+        opt.orElseThrow(CustomerNotFoundException::new);
+        Customer old = opt.get();
+        old.setName(newC.getName());
+        customerRepository.save(old);
+        return old;
     }
 }

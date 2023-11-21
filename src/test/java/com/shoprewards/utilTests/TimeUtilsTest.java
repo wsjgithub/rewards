@@ -1,5 +1,6 @@
-package com.shoprewards.util;
+package com.shoprewards.utilTests;
 
+import com.shoprewards.utils.TimeUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

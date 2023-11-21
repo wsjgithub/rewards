@@ -1,5 +1,6 @@
 package com.shoprewards.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -23,12 +24,28 @@ public class Transaction {
     private int value;
     @NotNull
     private Timestamp time;
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name="customer_id")
+    private int points;
+    @ManyToOne(cascade = CascadeType.ALL, targetEntity = Customer.class)
+    @JoinColumn(name="customer_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Customer customer;
-    public Transaction(int value, Timestamp time, Customer customer){
+    @Column(name = "customer_id")
+    private long customerId;
+
+    public Transaction(int value, Timestamp time, Customer customer, int points){
         this.value = value;
         this.time = time;
         this.customer = customer;
+        this.points = points;
+    }
+    public Transaction(int value, Timestamp time, long customerId, int points){
+        this.value = value;
+        this.time = time;
+        this.customerId = customerId;
+        this.points = points;
+    }
+    @Override
+    public String toString(){
+        return "{value: " + this.value + ", time: " + this.time + ", customer_id: " + this.customerId + ", points: " + this.points + "}";
     }
 }
